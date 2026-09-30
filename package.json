@@ -1,0 +1,13 @@
+{
+  "name": "interviewprep-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "InterviewPrep — Full Stack Interview Preparation & Mock Test Platform",
+  "scripts": {
+    "dev": "npm.cmd --prefix frontend run dev",
+    "start": "npm.cmd --prefix frontend run dev",
+    "build": "npm.cmd --prefix frontend run build",
+    "frontend": "npm.cmd --prefix frontend run dev",
+    "backend": "tools\\apache-maven-3.9.6\\bin\\mvn.cmd -f backend/pom.xml spring-boot:run"
+  }
+}

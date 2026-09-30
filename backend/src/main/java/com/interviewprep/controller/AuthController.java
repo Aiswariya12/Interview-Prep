@@ -1,0 +1,47 @@
+package com.interviewprep.controller;
+
+import com.interviewprep.dto.ApiResponse;
+import com.interviewprep.dto.AuthRequest;
+import com.interviewprep.dto.AuthResponse;
+import com.interviewprep.dto.RegisterRequest;
+import com.interviewprep.dto.UserDto;
+import com.interviewprep.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "Endpoints for user registration, login, and profile")
+public class AuthController {
+
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    @Operation(summary = "Register a new student account")
+    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest req) {
+        AuthResponse response = authService.register(req);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("Registration successful", response));
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "Log in with email and password to receive JWT token")
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest req) {
+        AuthResponse response = authService.login(req);
+        return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get currently authenticated user profile")
+    public ResponseEntity<ApiResponse<UserDto>> getCurrentUser() {
+        UserDto profile = authService.getCurrentUserProfile();
+        return ResponseEntity.ok(ApiResponse.ok(profile));
+    }
+}

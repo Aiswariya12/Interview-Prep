@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run InterviewPrep Backend",
+      "request": "launch",
+      "mainClass": "com.interviewprep.InterviewPrepApplication",
+      "projectName": "interviewprep-api",
+      "cwd": "${workspaceFolder}/backend"
+    }
+  ]
+}
