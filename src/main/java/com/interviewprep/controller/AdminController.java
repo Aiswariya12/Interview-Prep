@@ -1,0 +1,114 @@
+package com.interviewprep.controller;
+
+import com.interviewprep.dto.*;
+import com.interviewprep.entity.Role;
+import com.interviewprep.entity.Subject;
+import com.interviewprep.entity.Topic;
+import com.interviewprep.entity.Question;
+import com.interviewprep.repository.UserRepository;
+import com.interviewprep.service.AnalyticsService;
+import com.interviewprep.service.QuestionService;
+import com.interviewprep.service.SubjectService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/admin")
+@Tag(name = "Admin Management", description = "Endpoints for administrator controls, questions, subjects, and users")
+public class AdminController {
+
+    private final AnalyticsService analyticsService;
+    private final SubjectService subjectService;
+    private final QuestionService questionService;
+    private final UserRepository userRepository;
+
+    public AdminController(AnalyticsService analyticsService,
+                           SubjectService subjectService,
+                           QuestionService questionService,
+                           UserRepository userRepository) {
+        this.analyticsService = analyticsService;
+        this.subjectService = subjectService;
+        this.questionService = questionService;
+        this.userRepository = userRepository;
+    }
+
+    @GetMapping("/dashboard")
+    @Operation(summary = "Get overall platform analytics for admin dashboard")
+    public ResponseEntity<ApiResponse<AdminDashboardDto>> getAdminDashboard() {
+        AdminDashboardDto dto = analyticsService.getAdminDashboardData();
+        return ResponseEntity.ok(ApiResponse.ok(dto));
+    }
+
+    @GetMapping("/students")
+    @Operation(summary = "Get all registered students")
+    public ResponseEntity<ApiResponse<List<UserDto>>> getStudents() {
+        List<UserDto> students = userRepository.findByRole(Role.ROLE_STUDENT)
+                .stream()
+                .map(UserDto::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.ok(students));
+    }
+
+    @PostMapping("/subjects")
+    @Operation(summary = "Create a new subject")
+    public ResponseEntity<ApiResponse<Subject>> createSubject(@RequestBody Subject subject) {
+        Subject created = subjectService.createSubject(subject);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("Subject created", created));
+    }
+
+    @PutMapping("/subjects/{id}")
+    @Operation(summary = "Update subject details")
+    public ResponseEntity<ApiResponse<Subject>> updateSubject(@PathVariable Long id, @RequestBody Subject subject) {
+        Subject updated = subjectService.updateSubject(id, subject);
+        return ResponseEntity.ok(ApiResponse.ok("Subject updated", updated));
+    }
+
+    @DeleteMapping("/subjects/{id}")
+    @Operation(summary = "Delete subject")
+    public ResponseEntity<ApiResponse<Void>> deleteSubject(@PathVariable Long id) {
+        subjectService.deleteSubject(id);
+        return ResponseEntity.ok(ApiResponse.ok("Subject deleted successfully", null));
+    }
+
+    @PostMapping("/subjects/{subjectId}/topics")
+    @Operation(summary = "Create topic under subject")
+    public ResponseEntity<ApiResponse<Topic>> createTopic(@PathVariable Long subjectId, @RequestBody Topic topic) {
+        Topic created = subjectService.createTopic(subjectId, topic);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("Topic created", created));
+    }
+
+    @DeleteMapping("/topics/{topicId}")
+    @Operation(summary = "Delete topic")
+    public ResponseEntity<ApiResponse<Void>> deleteTopic(@PathVariable Long topicId) {
+        subjectService.deleteTopic(topicId);
+        return ResponseEntity.ok(ApiResponse.ok("Topic deleted successfully", null));
+    }
+
+    @PostMapping("/questions")
+    @Operation(summary = "Create a new question")
+    public ResponseEntity<ApiResponse<Question>> createQuestion(@Valid @RequestBody QuestionCreateRequest req) {
+        Question created = questionService.createQuestion(req);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("Question created", created));
+    }
+
+    @PutMapping("/questions/{id}")
+    @Operation(summary = "Update an existing question")
+    public ResponseEntity<ApiResponse<Question>> updateQuestion(@PathVariable Long id, @Valid @RequestBody QuestionCreateRequest req) {
+        Question updated = questionService.updateQuestion(id, req);
+        return ResponseEntity.ok(ApiResponse.ok("Question updated", updated));
+    }
+
+    @DeleteMapping("/questions/{id}")
+    @Operation(summary = "Delete question")
+    public ResponseEntity<ApiResponse<Void>> deleteQuestion(@PathVariable Long id) {
+        questionService.deleteQuestion(id);
+        return ResponseEntity.ok(ApiResponse.ok("Question deleted successfully", null));
+    }
+}
