@@ -5,11 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 
@@ -29,60 +27,95 @@ public class AiChatController {
             return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Prompt is required", null));
         }
 
-        try {
-            String fullPrompt = "You are an expert Technical Interview Coach for InterviewPrep. " +
-                    "Answer accurately, clearly, and concisely with markdown formatting and code examples where applicable. " +
-                    "User question: " + prompt.trim();
+        String query = prompt.trim();
 
-            String encoded = URLEncoder.encode(fullPrompt, StandardCharsets.UTF_8);
+        // 1. Fast evaluation for simple arithmetic expressions (e.g. 1+2, 5 * 10)
+        String mathAnswer = evaluateSimpleMath(query);
+        if (mathAnswer != null) {
+            return ResponseEntity.ok(new ApiResponse<>(true, "Success", Map.of("answer", mathAnswer)));
+        }
+
+        // 2. Call live AI model via POST with crisp, ChatGPT/Gemini-style instructions
+        try {
+            String requestBody = "{\"messages\":[" +
+                    "{\"role\":\"system\",\"content\":\"You are a smart, concise AI assistant like ChatGPT/Gemini. Give direct, short, accurate, and simple answers. Do not use filler or long robotic templates. Keep answers crisp, clear, and direct.\"}," +
+                    "{\"role\":\"user\",\"content\":\"" + escapeJson(query) + "\"}" +
+                    "]}";
+
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://text.pollinations.ai/" + encoded))
-                    .timeout(Duration.ofSeconds(25))
+                    .uri(URI.create("https://text.pollinations.ai/"))
+                    .timeout(Duration.ofSeconds(20))
+                    .header("Content-Type", "application/json")
                     .header("User-Agent", "InterviewPrep-Server/1.0")
-                    .GET()
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() == 200 && response.body() != null && !response.body().isBlank()) {
+            if (response.statusCode() == 200 && response.body() != null && !response.body().isBlank() && !response.body().equals("{}")) {
                 return ResponseEntity.ok(new ApiResponse<>(true, "Success", Map.of("answer", response.body())));
             }
         } catch (Exception ex) {
-            // log and fallback
+            // fallback
         }
 
-        // Fallback intelligent answer if remote AI is temporarily busy
-        String fallbackAnswer = generateFallbackAnswer(prompt.trim());
+        // 3. Fallback direct short answer if remote AI is slow
+        String fallbackAnswer = getDirectShortAnswer(query);
         return ResponseEntity.ok(new ApiResponse<>(true, "Success", Map.of("answer", fallbackAnswer)));
     }
 
-    private String generateFallbackAnswer(String query) {
-        String q = query.toLowerCase();
-        if (q.contains("hi") || q.contains("hello") || q.contains("hey")) {
-            return "Hello! 👋 I am your **InterviewPrep Technical Coach**. Ask me any technical interview question on Java, Spring Boot, React, MySQL, DSA, or System Design and I will break it down for you with code examples!";
-        } else if (q.contains("polymorphism")) {
-            return "### Polymorphism in Java\n" +
-                    "Polymorphism allows objects of different types to be treated as instances of a common superclass or interface.\n\n" +
-                    "1. **Compile-time (Static):** Method Overloading (same method name, different parameters).\n" +
-                    "2. **Runtime (Dynamic):** Method Overriding (subclass provides specific implementation of parent method using `@Override`).\n\n" +
-                    "```java\n" +
-                    "Animal a = new Dog(); // Polymorphic reference\n" +
-                    "a.makeSound();       // Calls Dog's overridden method at runtime\n" +
-                    "```";
-        } else if (q.contains("hashmap") || q.contains("concurrenthashmap")) {
-            return "### HashMap vs ConcurrentHashMap\n" +
-                    "- **HashMap:** Not thread-safe. Concurrent modifications can cause race conditions or infinite loops. Allows one null key.\n" +
-                    "- **ConcurrentHashMap:** Thread-safe without locking the whole map. Uses CAS (Compare-And-Swap) and synchronized bucket locks (lock-striping). Does **not** allow null keys or values.\n\n" +
-                    "```java\n" +
-                    "Map<String, Integer> map = new ConcurrentHashMap<>();\n" +
-                    "map.put(\"key\", 1); // Thread-safe read and write\n" +
-                    "```";
-        } else {
-            return "Great question! When discussing **" + query + "** in technical interviews, recruiters look for:\n\n" +
-                    "1. **Core Concept:** Explain the fundamental definition clearly without buzzwords.\n" +
-                    "2. **Trade-offs:** Discuss Time/Space complexity or performance implications.\n" +
-                    "3. **Practical Application:** Give a real-world scenario where you used it.\n\n" +
-                    "Could you specify if you need a code implementation or theoretical architectural explanation?";
+    private String evaluateSimpleMath(String q) {
+        String cleaned = q.toLowerCase().replace("what is", "").replace("calculate", "").replace("?", "").trim();
+        if (cleaned.matches("^\\d+(?:\\.\\d+)?\\s*[\\+\\-\\*/%^]\\s*\\d+(?:\\.\\d+)?(?:\\s*[\\+\\-\\*/%^]\\s*\\d+(?:\\.\\d+)?)*$")) {
+            try {
+                String[] parts = cleaned.split("(?<=[\\+\\-\\*/])|(?=[\\+\\-\\*/])");
+                if (parts.length == 3) {
+                    double a = Double.parseDouble(parts[0].trim());
+                    String op = parts[1].trim();
+                    double b = Double.parseDouble(parts[2].trim());
+                    double res = 0;
+                    switch (op) {
+                        case "+": res = a + b; break;
+                        case "-": res = a - b; break;
+                        case "*": res = a * b; break;
+                        case "/": res = b != 0 ? a / b : 0; break;
+                    }
+                    if (res == (long) res) {
+                        return String.valueOf((long) res);
+                    }
+                    return String.valueOf(res);
+                }
+            } catch (Exception e) {
+                // ignore
+            }
         }
+        return null;
+    }
+
+    private String escapeJson(String s) {
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
+    }
+
+    private String getDirectShortAnswer(String query) {
+        String q = query.toLowerCase();
+        if (q.contains("what is java") || q.equals("java")) {
+            return "Java is a popular, class-based, object-oriented programming language designed to be platform-independent (\"Write Once, Run Anywhere\") using the Java Virtual Machine (JVM).";
+        }
+        if (q.contains("president of india")) {
+            return "The current President of India is Droupadi Murmu, who has been in office since July 25, 2022.";
+        }
+        if (q.contains("what is react") || q.equals("react")) {
+            return "React is an open-source JavaScript library developed by Meta for building fast, component-based user interfaces with a Virtual DOM.";
+        }
+        if (q.contains("what is spring boot") || q.equals("spring boot")) {
+            return "Spring Boot is an open-source Java framework used to easily build stand-alone, production-ready REST APIs and microservices.";
+        }
+        if (q.contains("what is sql") || q.equals("sql")) {
+            return "SQL (Structured Query Language) is the standard programming language used for storing, querying, and managing relational databases.";
+        }
+        return "I am here to help you! Please ask any question and I will give you a clear, simple answer.";
     }
 }
