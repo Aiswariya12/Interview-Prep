@@ -1,9 +1,29 @@
+# Dependencies & Build Outputs
+node_modules/
+frontend/node_modules/
+frontend/dist/
+backend/target/
+tools/
 target/
+
+# Environment Variables & Secrets (Never commit secrets to GitHub)
 .env
 .env.properties
+backend/.env
+backend/.env.properties
+.env.local
+.env.production
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# Logs & OS Files
 *.log
+npm-debug.log*
 .DS_Store
 Thumbs.db
+
+# IDE Configs
 .idea/
 *.iml
 .settings/
