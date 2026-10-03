@@ -52,7 +52,7 @@ public class DataInitializer implements CommandLineRunner {
                 user.setPassword(passwordEncoder.encode("Aiswariya00"));
                 user.setRole(Role.ROLE_ADMIN);
                 userRepository.save(user);
-                logger.info("Verified primary admin: pradhanaiswariya1@gmail.com");
+                logger.info("Updated primary admin: pradhanaiswariya1@gmail.com");
             },
             () -> {
                 User admin = new User("Aiswariya Pradhan", "pradhanaiswariya1@gmail.com", passwordEncoder.encode("Aiswariya00"), Role.ROLE_ADMIN);
@@ -79,207 +79,46 @@ public class DataInitializer implements CommandLineRunner {
                 defaultAdmin.setBranch("Computer Science");
                 defaultAdmin.setGraduationYear(2022);
                 userRepository.save(defaultAdmin);
+                logger.info("Created fallback admin: admin@interviewprep.com");
             }
         );
 
-        // 3. Seed Students Directory
-        List<User> students = new ArrayList<>();
-        students.add(seedOrUpdateStudent("Alex Morgan", "student@interviewprep.com", "Student@123", "Stanford Institute of Technology", "B.Tech", "Computer Science & Engineering", 2025, 4));
-        students.add(seedOrUpdateStudent("Priya Sharma", "priya.sharma@techuniv.edu", "Student@123", "National Institute of Technology", "B.Tech", "Information Technology", 2025, 6));
-        students.add(seedOrUpdateStudent("Rahul Verma", "rahul.verma@iitdelhi.ac.in", "Student@123", "IIT Delhi", "B.Tech", "Computer Science", 2024, 3));
-        students.add(seedOrUpdateStudent("Ananya Patel", "ananya.patel@bits.ac.in", "Student@123", "BITS Pilani", "B.E.", "Software Engineering", 2025, 5));
-        students.add(seedOrUpdateStudent("Rohan Gupta", "rohan.gupta@iiit.ac.in", "Student@123", "IIIT Hyderabad", "M.Tech", "Data Science", 2024, 2));
+        // 3. Seed or Update Demo Student: student@interviewprep.com / Student@123
+        userRepository.findByEmail("student@interviewprep.com").ifPresentOrElse(
+            user -> {
+                user.setPassword(passwordEncoder.encode("Student@123"));
+                user.setRole(Role.ROLE_STUDENT);
+                userRepository.save(user);
+            },
+            () -> {
+                User student = new User("Alex Morgan", "student@interviewprep.com", passwordEncoder.encode("Student@123"), Role.ROLE_STUDENT);
+                student.setCollege("Stanford Institute of Technology");
+                student.setDegree("B.Tech");
+                student.setBranch("Computer Science & Engineering");
+                student.setGraduationYear(2025);
+                student.setStreakDays(4);
+                student.setLastPracticeDate(LocalDateTime.now().minusHours(12));
+                student = userRepository.save(student);
+
+                // Pre-award a starter badge
+                UserBadge starterBadge = new UserBadge(student, "WELCOME_PREPPER", "Early Adopter", "Joined the InterviewPrep platform and initiated career readiness", "🚀");
+                userBadgeRepository.save(starterBadge);
+                logger.info("Created demo student: student@interviewprep.com");
+            }
+        );
 
         // 4. Seed Subjects, Topics & Questions if not yet seeded
-        Map<String, Subject> subjectMap = new HashMap<>();
-        Map<String, Topic> topicMap = new HashMap<>();
         if (subjectRepository.count() == 0 || questionRepository.count() == 0) {
             logger.info("Seeding InterviewPrep database with subjects, topics, and high-yield questions...");
+            Map<String, Subject> subjectMap = new HashMap<>();
+            Map<String, Topic> topicMap = new HashMap<>();
+
             createSubjectAndTopics(subjectMap, topicMap);
             seedQuestions(subjectMap, topicMap);
-        } else {
-            subjectRepository.findAll().forEach(s -> subjectMap.put(s.getName(), s));
-            topicRepository.findAll().forEach(t -> topicMap.put(t.getName(), t));
         }
 
-        // 5. Seed Sample Completed Interviews if not yet seeded
-        if (mockTestRepository.count() == 0) {
-            logger.info("Seeding sample completed student mock test interviews...");
-            seedSampleInterviews(students, subjectMap, topicMap);
-        }
-
-        logger.info("Database initialization completed. Total users: {}, subjects: {}, topics: {}, questions: {}, completed mock tests: {}.",
-                userRepository.count(), subjectRepository.count(), topicRepository.count(), questionRepository.count(), mockTestRepository.count());
-    }
-
-    private User seedOrUpdateStudent(String name, String email, String rawPassword, String college, String degree, String branch, int gradYear, int streak) {
-        return userRepository.findByEmail(email).map(existing -> {
-            existing.setName(name);
-            existing.setCollege(college);
-            existing.setDegree(degree);
-            existing.setBranch(branch);
-            existing.setGraduationYear(gradYear);
-            existing.setStreakDays(streak);
-            return userRepository.save(existing);
-        }).orElseGet(() -> {
-            User s = new User(name, email, passwordEncoder.encode(rawPassword), Role.ROLE_STUDENT);
-            s.setCollege(college);
-            s.setDegree(degree);
-            s.setBranch(branch);
-            s.setGraduationYear(gradYear);
-            s.setStreakDays(streak);
-            s.setLastPracticeDate(LocalDateTime.now().minusHours(10));
-            s = userRepository.save(s);
-
-            UserBadge badge = new UserBadge(s, "WELCOME_PREPPER", "Early Adopter", "Joined the InterviewPrep platform and initiated career readiness", "🚀");
-            userBadgeRepository.save(badge);
-            return s;
-        });
-    }
-
-    private void seedSampleInterviews(List<User> students, Map<String, Subject> subjectMap, Map<String, Topic> topicMap) {
-        if (students.isEmpty() || subjectMap.isEmpty()) return;
-
-        Subject java = subjectMap.get("Java");
-        Subject spring = subjectMap.get("Spring Boot");
-        Subject react = subjectMap.get("React");
-        Subject mysql = subjectMap.get("MySQL & SQL");
-        if (mysql == null) mysql = subjectMap.get("MySQL");
-        Subject dsa = subjectMap.get("Data Structures & Algorithms");
-        if (dsa == null) dsa = subjectMap.get("DSA");
-        Subject os = subjectMap.get("Operating Systems");
-        if (os == null) os = subjectMap.get("OS");
-
-        User alex = students.get(0);
-        if (java != null) {
-            MockTest t = new MockTest();
-            t.setUser(alex);
-            t.setSubject(java);
-            t.setTopic(topicMap.get("OOP Concepts"));
-            t.setDifficulty(Difficulty.MEDIUM);
-            t.setTotalQuestions(10);
-            t.setDurationMinutes(15);
-            t.setScore(8.0);
-            t.setMaxScore(10.0);
-            t.setPercentage(80.0);
-            t.setAccuracy(80.0);
-            t.setCorrectCount(8);
-            t.setWrongCount(2);
-            t.setSkippedCount(0);
-            t.setTimeTakenSeconds(540);
-            t.setStatus(MockTestStatus.COMPLETED);
-            t.setCompletedAt(LocalDateTime.now().minusDays(1));
-            mockTestRepository.save(t);
-        }
-
-        if (react != null) {
-            MockTest t = new MockTest();
-            t.setUser(alex);
-            t.setSubject(react);
-            t.setTopic(topicMap.get("React Hooks"));
-            t.setDifficulty(Difficulty.EASY);
-            t.setTotalQuestions(5);
-            t.setDurationMinutes(10);
-            t.setScore(5.0);
-            t.setMaxScore(5.0);
-            t.setPercentage(100.0);
-            t.setAccuracy(100.0);
-            t.setCorrectCount(5);
-            t.setWrongCount(0);
-            t.setSkippedCount(0);
-            t.setTimeTakenSeconds(260);
-            t.setStatus(MockTestStatus.COMPLETED);
-            t.setCompletedAt(LocalDateTime.now().minusHours(8));
-            mockTestRepository.save(t);
-        }
-
-        if (students.size() > 1 && spring != null) {
-            User priya = students.get(1);
-            MockTest t = new MockTest();
-            t.setUser(priya);
-            t.setSubject(spring);
-            t.setTopic(topicMap.get("Spring MVC & REST"));
-            t.setDifficulty(Difficulty.MEDIUM);
-            t.setTotalQuestions(10);
-            t.setDurationMinutes(15);
-            t.setScore(8.5);
-            t.setMaxScore(10.0);
-            t.setPercentage(85.0);
-            t.setAccuracy(85.0);
-            t.setCorrectCount(9);
-            t.setWrongCount(1);
-            t.setSkippedCount(0);
-            t.setTimeTakenSeconds(610);
-            t.setStatus(MockTestStatus.COMPLETED);
-            t.setCompletedAt(LocalDateTime.now().minusDays(2));
-            mockTestRepository.save(t);
-        }
-
-        if (students.size() > 1 && mysql != null) {
-            User priya = students.get(1);
-            MockTest t = new MockTest();
-            t.setUser(priya);
-            t.setSubject(mysql);
-            t.setTopic(topicMap.get("Transactions & ACID"));
-            t.setDifficulty(Difficulty.HARD);
-            t.setTotalQuestions(10);
-            t.setDurationMinutes(20);
-            t.setScore(9.0);
-            t.setMaxScore(10.0);
-            t.setPercentage(90.0);
-            t.setAccuracy(90.0);
-            t.setCorrectCount(9);
-            t.setWrongCount(1);
-            t.setSkippedCount(0);
-            t.setTimeTakenSeconds(780);
-            t.setStatus(MockTestStatus.COMPLETED);
-            t.setCompletedAt(LocalDateTime.now().minusDays(3));
-            mockTestRepository.save(t);
-        }
-
-        if (students.size() > 2 && dsa != null) {
-            User rahul = students.get(2);
-            MockTest t = new MockTest();
-            t.setUser(rahul);
-            t.setSubject(dsa);
-            t.setTopic(topicMap.get("Dynamic Programming"));
-            t.setDifficulty(Difficulty.HARD);
-            t.setTotalQuestions(10);
-            t.setDurationMinutes(25);
-            t.setScore(9.5);
-            t.setMaxScore(10.0);
-            t.setPercentage(95.0);
-            t.setAccuracy(95.0);
-            t.setCorrectCount(10);
-            t.setWrongCount(0);
-            t.setSkippedCount(0);
-            t.setTimeTakenSeconds(920);
-            t.setStatus(MockTestStatus.COMPLETED);
-            t.setCompletedAt(LocalDateTime.now().minusDays(1));
-            mockTestRepository.save(t);
-        }
-
-        if (students.size() > 3 && os != null) {
-            User ananya = students.get(3);
-            MockTest t = new MockTest();
-            t.setUser(ananya);
-            t.setSubject(os);
-            t.setTopic(topicMap.get("Processes & Threads"));
-            t.setDifficulty(Difficulty.MEDIUM);
-            t.setTotalQuestions(10);
-            t.setDurationMinutes(15);
-            t.setScore(7.5);
-            t.setMaxScore(10.0);
-            t.setPercentage(75.0);
-            t.setAccuracy(75.0);
-            t.setCorrectCount(8);
-            t.setWrongCount(2);
-            t.setSkippedCount(0);
-            t.setTimeTakenSeconds(510);
-            t.setStatus(MockTestStatus.COMPLETED);
-            t.setCompletedAt(LocalDateTime.now().minusHours(14));
-            mockTestRepository.save(t);
-        }
+        logger.info("Database initialization completed. Total users: {}, subjects: {}, topics: {}, questions: {}.",
+                userRepository.count(), subjectRepository.count(), topicRepository.count(), questionRepository.count());
     }
 
     private void createSubjectAndTopics(Map<String, Subject> subMap, Map<String, Topic> topMap) {
