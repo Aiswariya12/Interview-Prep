@@ -69,20 +69,18 @@ const Login = () => {
             <button
               type="button"
               onClick={() => fillDemo('student')}
-              className="py-2 px-2.5 rounded-xl bg-white border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-xs font-semibold text-indigo-700 shadow-xs transition-all text-left"
+              className="py-2.5 px-3 rounded-xl bg-white border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-xs font-semibold text-indigo-700 shadow-xs transition-all text-left"
             >
               <span className="block text-[10px] text-slate-400 font-normal">Student Role</span>
               Demo Student
-              <span className="block text-[9px] text-slate-400 truncate mt-0.5">student@interviewprep.com</span>
             </button>
             <button
               type="button"
               onClick={() => fillDemo('admin')}
-              className="py-2 px-2.5 rounded-xl bg-white border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-xs font-semibold text-slate-800 shadow-xs transition-all text-left"
+              className="py-2.5 px-3 rounded-xl bg-white border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-xs font-semibold text-slate-800 shadow-xs transition-all text-left"
             >
               <span className="block text-[10px] text-slate-400 font-normal">Admin Role</span>
               Admin Aiswariya
-              <span className="block text-[9px] text-slate-400 truncate mt-0.5">pradhanaiswariya1@gmail.com</span>
             </button>
           </div>
         </div>
