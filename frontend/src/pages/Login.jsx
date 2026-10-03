@@ -35,9 +35,14 @@ const Login = () => {
     }
   };
 
-  const fillStudentDemo = () => {
-    setEmail('student@interviewprep.com');
-    setPassword('Student@123');
+  const fillDemo = (role) => {
+    if (role === 'student') {
+      setEmail('student@interviewprep.com');
+      setPassword('Student@123');
+    } else if (role === 'admin') {
+      setEmail('pradhanaiswariya1@gmail.com');
+      setPassword('Aiswariya00');
+    }
   };
 
   return (
@@ -55,24 +60,31 @@ const Login = () => {
           </p>
         </div>
 
-        {/* 1-Click Demo for Student Only */}
-        <div className="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-              <UserCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-indigo-900">Student Demo</p>
-              <p className="text-[10px] text-slate-500">Quick 1-click test student access</p>
-            </div>
+        {/* 1-Click Demo Buttons for Fast Evaluation */}
+        <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-2">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+            <UserCheck className="w-3.5 h-3.5 text-indigo-600" /> Quick 1-Click Credentials
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => fillDemo('student')}
+              className="py-2 px-2.5 rounded-xl bg-white border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-xs font-semibold text-indigo-700 shadow-xs transition-all text-left"
+            >
+              <span className="block text-[10px] text-slate-400 font-normal">Student Role</span>
+              Demo Student
+              <span className="block text-[9px] text-slate-400 truncate mt-0.5">student@interviewprep.com</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => fillDemo('admin')}
+              className="py-2 px-2.5 rounded-xl bg-white border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 text-xs font-semibold text-slate-800 shadow-xs transition-all text-left"
+            >
+              <span className="block text-[10px] text-slate-400 font-normal">Admin Role</span>
+              Admin Aiswariya
+              <span className="block text-[9px] text-slate-400 truncate mt-0.5">pradhanaiswariya1@gmail.com</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={fillStudentDemo}
-            className="py-1.5 px-3 rounded-lg bg-white border border-indigo-200 hover:border-indigo-400 text-xs font-semibold text-indigo-700 shadow-xs transition-colors"
-          >
-            Auto-fill
-          </button>
         </div>
 
         {error && (

@@ -41,71 +41,81 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        // Ensure the Administrator account is always up-to-date with designated credentials
+        logger.info("Initializing InterviewPrep users, subjects, and questions...");
+
+        // 1. Seed or Update Primary Admin: pradhanaiswariya1@gmail.com / Aiswariya00
         userRepository.findByEmail("pradhanaiswariya1@gmail.com").ifPresentOrElse(
-            existingAdmin -> {
-                existingAdmin.setPassword(passwordEncoder.encode("Aiswariya00"));
-                existingAdmin.setRole(Role.ROLE_ADMIN);
-                userRepository.save(existingAdmin);
-                logger.info("Admin credentials verified for pradhanaiswariya1@gmail.com");
+            user -> {
+                user.setPassword(passwordEncoder.encode("Aiswariya00"));
+                user.setRole(Role.ROLE_ADMIN);
+                userRepository.save(user);
+                logger.info("Updated primary admin: pradhanaiswariya1@gmail.com");
             },
             () -> {
-                userRepository.findByEmail("admin@interviewprep.com").ifPresentOrElse(
-                    oldAdmin -> {
-                        oldAdmin.setEmail("pradhanaiswariya1@gmail.com");
-                        oldAdmin.setName("Platform Administrator");
-                        oldAdmin.setPassword(passwordEncoder.encode("Aiswariya00"));
-                        oldAdmin.setRole(Role.ROLE_ADMIN);
-                        userRepository.save(oldAdmin);
-                        logger.info("Migrated admin to pradhanaiswariya1@gmail.com");
-                    },
-                    () -> {
-                        User admin = new User("Platform Administrator", "pradhanaiswariya1@gmail.com", passwordEncoder.encode("Aiswariya00"), Role.ROLE_ADMIN);
-                        admin.setCollege("Global University");
-                        admin.setDegree("M.Tech");
-                        admin.setBranch("Computer Science");
-                        admin.setGraduationYear(2022);
-                        userRepository.save(admin);
-                        logger.info("Admin created: pradhanaiswariya1@gmail.com");
-                    }
-                );
+                User admin = new User("Aiswariya Pradhan", "pradhanaiswariya1@gmail.com", passwordEncoder.encode("Aiswariya00"), Role.ROLE_ADMIN);
+                admin.setCollege("Global University");
+                admin.setDegree("B.Tech");
+                admin.setBranch("Computer Science & Engineering");
+                admin.setGraduationYear(2025);
+                userRepository.save(admin);
+                logger.info("Created primary admin: pradhanaiswariya1@gmail.com");
             }
         );
 
-        if (userRepository.count() > 1 && questionRepository.count() > 0) {
-            logger.info("Database already seeded with questions. Skipping initial data seeding.");
-            return;
+        // 2. Seed or Update Secondary Admin: admin@interviewprep.com / Admin@123
+        userRepository.findByEmail("admin@interviewprep.com").ifPresentOrElse(
+            user -> {
+                user.setPassword(passwordEncoder.encode("Admin@123"));
+                user.setRole(Role.ROLE_ADMIN);
+                userRepository.save(user);
+            },
+            () -> {
+                User defaultAdmin = new User("Platform Administrator", "admin@interviewprep.com", passwordEncoder.encode("Admin@123"), Role.ROLE_ADMIN);
+                defaultAdmin.setCollege("Global University");
+                defaultAdmin.setDegree("M.Tech");
+                defaultAdmin.setBranch("Computer Science");
+                defaultAdmin.setGraduationYear(2022);
+                userRepository.save(defaultAdmin);
+                logger.info("Created fallback admin: admin@interviewprep.com");
+            }
+        );
+
+        // 3. Seed or Update Demo Student: student@interviewprep.com / Student@123
+        userRepository.findByEmail("student@interviewprep.com").ifPresentOrElse(
+            user -> {
+                user.setPassword(passwordEncoder.encode("Student@123"));
+                user.setRole(Role.ROLE_STUDENT);
+                userRepository.save(user);
+            },
+            () -> {
+                User student = new User("Alex Morgan", "student@interviewprep.com", passwordEncoder.encode("Student@123"), Role.ROLE_STUDENT);
+                student.setCollege("Stanford Institute of Technology");
+                student.setDegree("B.Tech");
+                student.setBranch("Computer Science & Engineering");
+                student.setGraduationYear(2025);
+                student.setStreakDays(4);
+                student.setLastPracticeDate(LocalDateTime.now().minusHours(12));
+                student = userRepository.save(student);
+
+                // Pre-award a starter badge
+                UserBadge starterBadge = new UserBadge(student, "WELCOME_PREPPER", "Early Adopter", "Joined the InterviewPrep platform and initiated career readiness", "🚀");
+                userBadgeRepository.save(starterBadge);
+                logger.info("Created demo student: student@interviewprep.com");
+            }
+        );
+
+        // 4. Seed Subjects, Topics & Questions if not yet seeded
+        if (subjectRepository.count() == 0 || questionRepository.count() == 0) {
+            logger.info("Seeding InterviewPrep database with subjects, topics, and high-yield questions...");
+            Map<String, Subject> subjectMap = new HashMap<>();
+            Map<String, Topic> topicMap = new HashMap<>();
+
+            createSubjectAndTopics(subjectMap, topicMap);
+            seedQuestions(subjectMap, topicMap);
         }
 
-        logger.info("Seeding InterviewPrep database with subjects, topics, users, and high-yield questions...");
-
-        // Ensure student user exists
-        if (userRepository.findByEmail("student@interviewprep.com").isEmpty()) {
-            User student = new User("Alex Morgan", "student@interviewprep.com", passwordEncoder.encode("Student@123"), Role.ROLE_STUDENT);
-            student.setCollege("Stanford Institute of Technology");
-            student.setDegree("B.Tech");
-            student.setBranch("Computer Science & Engineering");
-            student.setGraduationYear(2025);
-            student.setStreakDays(4);
-            student.setLastPracticeDate(LocalDateTime.now().minusHours(12));
-            student = userRepository.save(student);
-
-            // Pre-award a starter badge
-            UserBadge starterBadge = new UserBadge(student, "WELCOME_PREPPER", "Early Adopter", "Joined the InterviewPrep platform and initiated career readiness", "🚀");
-            userBadgeRepository.save(starterBadge);
-        }
-
-        // 2. Seed Subjects and Topics
-        Map<String, Subject> subjectMap = new HashMap<>();
-        Map<String, Topic> topicMap = new HashMap<>();
-
-        createSubjectAndTopics(subjectMap, topicMap);
-
-        // 3. Seed High-Yield Questions
-        seedQuestions(subjectMap, topicMap);
-
-        logger.info("Database seeded successfully with {} subjects, {} topics, and {} questions.",
-                subjectRepository.count(), topicRepository.count(), questionRepository.count());
+        logger.info("Database initialization completed. Total users: {}, subjects: {}, topics: {}, questions: {}.",
+                userRepository.count(), subjectRepository.count(), topicRepository.count(), questionRepository.count());
     }
 
     private void createSubjectAndTopics(Map<String, Subject> subMap, Map<String, Topic> topMap) {
