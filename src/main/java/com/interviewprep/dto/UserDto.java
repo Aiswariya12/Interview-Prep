@@ -14,6 +14,9 @@ public class UserDto {
     private String branch;
     private Integer graduationYear;
     private Integer streakDays;
+    private Integer totalTests = 0;
+    private Double averageScore = 0.0;
+    private Double bestScore = 0.0;
     private LocalDateTime createdAt;
 
     public UserDto() {}
@@ -59,6 +62,15 @@ public class UserDto {
 
     public Integer getStreakDays() { return streakDays; }
     public void setStreakDays(Integer streakDays) { this.streakDays = streakDays; }
+
+    public Integer getTotalTests() { return totalTests; }
+    public void setTotalTests(Integer totalTests) { this.totalTests = totalTests; }
+
+    public Double getAverageScore() { return averageScore; }
+    public void setAverageScore(Double averageScore) { this.averageScore = averageScore; }
+
+    public Double getBestScore() { return bestScore; }
+    public void setBestScore(Double bestScore) { this.bestScore = bestScore; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.interviewprep.entity.MockTest;
+import com.interviewprep.entity.MockTestStatus;
+import com.interviewprep.repository.MockTestRepository;
+
 @RestController
 @RequestMapping("/api/admin")
 @Tag(name = "Admin Management", description = "Endpoints for administrator controls, questions, subjects, and users")
@@ -28,15 +32,18 @@ public class AdminController {
     private final SubjectService subjectService;
     private final QuestionService questionService;
     private final UserRepository userRepository;
+    private final MockTestRepository mockTestRepository;
 
     public AdminController(AnalyticsService analyticsService,
                            SubjectService subjectService,
                            QuestionService questionService,
-                           UserRepository userRepository) {
+                           UserRepository userRepository,
+                           MockTestRepository mockTestRepository) {
         this.analyticsService = analyticsService;
         this.subjectService = subjectService;
         this.questionService = questionService;
         this.userRepository = userRepository;
+        this.mockTestRepository = mockTestRepository;
     }
 
     @GetMapping("/dashboard")
@@ -47,13 +54,42 @@ public class AdminController {
     }
 
     @GetMapping("/students")
-    @Operation(summary = "Get all registered students")
+    @Operation(summary = "Get all registered students with interview statistics")
     public ResponseEntity<ApiResponse<List<UserDto>>> getStudents() {
         List<UserDto> students = userRepository.findByRole(Role.ROLE_STUDENT)
                 .stream()
-                .map(UserDto::fromEntity)
+                .map(u -> {
+                    UserDto dto = UserDto.fromEntity(u);
+                    long testCount = mockTestRepository.countByUserIdAndStatus(u.getId(), MockTestStatus.COMPLETED);
+                    Double avg = mockTestRepository.getAveragePercentageByUserId(u.getId());
+                    Double max = mockTestRepository.getMaxPercentageByUserId(u.getId());
+                    dto.setTotalTests((int) testCount);
+                    dto.setAverageScore(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
+                    dto.setBestScore(max != null ? Math.round(max * 10.0) / 10.0 : 0.0);
+                    return dto;
+                })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.ok(students));
+    }
+
+    @GetMapping("/interviews")
+    @Operation(summary = "Get all student interviews taken across the platform")
+    public ResponseEntity<ApiResponse<List<MockTestSummaryDto>>> getAllInterviews() {
+        List<MockTest> tests = mockTestRepository.findAllByOrderByCreatedAtDesc();
+        List<MockTestSummaryDto> dtos = tests.stream()
+                .map(MockTestSummaryDto::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.ok(dtos));
+    }
+
+    @GetMapping("/students/{studentId}/interviews")
+    @Operation(summary = "Get all interviews taken by a specific student")
+    public ResponseEntity<ApiResponse<List<MockTestSummaryDto>>> getStudentInterviews(@PathVariable Long studentId) {
+        List<MockTest> tests = mockTestRepository.findByUserIdOrderByCreatedAtDesc(studentId);
+        List<MockTestSummaryDto> dtos = tests.stream()
+                .map(MockTestSummaryDto::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.ok(dtos));
     }
 
     @PostMapping("/subjects")

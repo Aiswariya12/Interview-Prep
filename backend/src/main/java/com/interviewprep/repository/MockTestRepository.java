@@ -12,6 +12,8 @@ import java.util.List;
 @Repository
 public interface MockTestRepository extends JpaRepository<MockTest, Long> {
 
+    List<MockTest> findAllByOrderByCreatedAtDesc();
+
     List<MockTest> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     List<MockTest> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, MockTestStatus status);

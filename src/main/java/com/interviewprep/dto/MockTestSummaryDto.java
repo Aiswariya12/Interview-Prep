@@ -6,6 +6,9 @@ import java.time.LocalDateTime;
 public class MockTestSummaryDto {
 
     private Long id;
+    private Long studentId;
+    private String studentName;
+    private String studentCollege;
     private String subjectName;
     private String topicName;
     private String difficulty;
@@ -27,6 +30,11 @@ public class MockTestSummaryDto {
     public static MockTestSummaryDto fromEntity(MockTest test) {
         MockTestSummaryDto dto = new MockTestSummaryDto();
         dto.setId(test.getId());
+        if (test.getUser() != null) {
+            dto.setStudentId(test.getUser().getId());
+            dto.setStudentName(test.getUser().getName());
+            dto.setStudentCollege(test.getUser().getCollege());
+        }
         dto.setSubjectName(test.getSubject().getName());
         dto.setTopicName(test.getTopic() != null ? test.getTopic().getName() : "All Topics");
         dto.setDifficulty(test.getDifficulty().name());
@@ -47,6 +55,15 @@ public class MockTestSummaryDto {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public Long getStudentId() { return studentId; }
+    public void setStudentId(Long studentId) { this.studentId = studentId; }
+
+    public String getStudentName() { return studentName; }
+    public void setStudentName(String studentName) { this.studentName = studentName; }
+
+    public String getStudentCollege() { return studentCollege; }
+    public void setStudentCollege(String studentCollege) { this.studentCollege = studentCollege; }
 
     public String getSubjectName() { return subjectName; }
     public void setSubjectName(String subjectName) { this.subjectName = subjectName; }
