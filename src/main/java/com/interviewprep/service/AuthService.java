@@ -69,44 +69,28 @@ public class AuthService {
         String normalizedEmail = req.getEmail() != null ? req.getEmail().trim().toLowerCase() : "";
         String rawPassword = req.getPassword() != null ? req.getPassword() : "";
 
-        // Check if user exists in the database (local or cloud)
+        // 1. Check if user is registered in the database
         Optional<User> existingUser = userRepository.findByEmail(normalizedEmail)
                 .or(() -> userRepository.findByEmail(req.getEmail()));
 
         if (existingUser.isEmpty()) {
-            // Brand new user attempting login: auto-register and persist directly to the database
-            User newUser = new User();
-            newUser.setName(deriveNameFromEmail(normalizedEmail));
-            newUser.setEmail(normalizedEmail);
-            newUser.setPassword(passwordEncoder.encode(rawPassword));
-
-            if ("pradhanaiswariya1@gmail.com".equalsIgnoreCase(normalizedEmail)) {
-                newUser.setRole(Role.ROLE_ADMIN);
-                newUser.setName("Aiswariya Pradhan");
-            } else {
-                newUser.setRole(Role.ROLE_STUDENT);
-            }
-
-            newUser.setCollege("Engineering College");
-            newUser.setDegree("B.Tech");
-            newUser.setBranch("Computer Science");
-            newUser.setGraduationYear(2025);
-            newUser.setStreakDays(1);
-            userRepository.saveAndFlush(newUser);
+            throw new BadRequestException("Email not registered. Please register first.");
         }
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(normalizedEmail, rawPassword)
-        );
+        // 2. Verify credentials
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(normalizedEmail, rawPassword)
+            );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.generateToken(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = tokenProvider.generateToken(authentication);
 
-        User user = userRepository.findByEmail(normalizedEmail)
-                .or(() -> userRepository.findByEmail(req.getEmail()))
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        return new AuthResponse(jwt, user.getId(), user.getName(), user.getEmail(), user.getRole().name(), user.getCollege());
+            User user = existingUser.get();
+            return new AuthResponse(jwt, user.getId(), user.getName(), user.getEmail(), user.getRole().name(), user.getCollege());
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            throw new BadRequestException("Password invalid. Please try again.");
+        }
     }
 
     private String deriveNameFromEmail(String email) {
