@@ -41,33 +41,59 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (userRepository.count() > 0 && questionRepository.count() > 0) {
-            logger.info("Database already seeded. Skipping initial data seeding.");
+        // Ensure the Administrator account is always up-to-date with designated credentials
+        userRepository.findByEmail("pradhanaiswariya1@gmail.com").ifPresentOrElse(
+            existingAdmin -> {
+                existingAdmin.setPassword(passwordEncoder.encode("Aiswariya00"));
+                existingAdmin.setRole(Role.ROLE_ADMIN);
+                userRepository.save(existingAdmin);
+                logger.info("Admin credentials verified for pradhanaiswariya1@gmail.com");
+            },
+            () -> {
+                userRepository.findByEmail("admin@interviewprep.com").ifPresentOrElse(
+                    oldAdmin -> {
+                        oldAdmin.setEmail("pradhanaiswariya1@gmail.com");
+                        oldAdmin.setName("Platform Administrator");
+                        oldAdmin.setPassword(passwordEncoder.encode("Aiswariya00"));
+                        oldAdmin.setRole(Role.ROLE_ADMIN);
+                        userRepository.save(oldAdmin);
+                        logger.info("Migrated admin to pradhanaiswariya1@gmail.com");
+                    },
+                    () -> {
+                        User admin = new User("Platform Administrator", "pradhanaiswariya1@gmail.com", passwordEncoder.encode("Aiswariya00"), Role.ROLE_ADMIN);
+                        admin.setCollege("Global University");
+                        admin.setDegree("M.Tech");
+                        admin.setBranch("Computer Science");
+                        admin.setGraduationYear(2022);
+                        userRepository.save(admin);
+                        logger.info("Admin created: pradhanaiswariya1@gmail.com");
+                    }
+                );
+            }
+        );
+
+        if (userRepository.count() > 1 && questionRepository.count() > 0) {
+            logger.info("Database already seeded with questions. Skipping initial data seeding.");
             return;
         }
 
         logger.info("Seeding InterviewPrep database with subjects, topics, users, and high-yield questions...");
 
-        // 1. Seed Users
-        User admin = new User("Platform Administrator", "admin@interviewprep.com", passwordEncoder.encode("Admin@123"), Role.ROLE_ADMIN);
-        admin.setCollege("Global University");
-        admin.setDegree("M.Tech");
-        admin.setBranch("Computer Science");
-        admin.setGraduationYear(2022);
-        userRepository.save(admin);
+        // Ensure student user exists
+        if (userRepository.findByEmail("student@interviewprep.com").isEmpty()) {
+            User student = new User("Alex Morgan", "student@interviewprep.com", passwordEncoder.encode("Student@123"), Role.ROLE_STUDENT);
+            student.setCollege("Stanford Institute of Technology");
+            student.setDegree("B.Tech");
+            student.setBranch("Computer Science & Engineering");
+            student.setGraduationYear(2025);
+            student.setStreakDays(4);
+            student.setLastPracticeDate(LocalDateTime.now().minusHours(12));
+            student = userRepository.save(student);
 
-        User student = new User("Alex Morgan", "student@interviewprep.com", passwordEncoder.encode("Student@123"), Role.ROLE_STUDENT);
-        student.setCollege("Stanford Institute of Technology");
-        student.setDegree("B.Tech");
-        student.setBranch("Computer Science & Engineering");
-        student.setGraduationYear(2025);
-        student.setStreakDays(4);
-        student.setLastPracticeDate(LocalDateTime.now().minusHours(12));
-        student = userRepository.save(student);
-
-        // Pre-award a starter badge
-        UserBadge starterBadge = new UserBadge(student, "WELCOME_PREPPER", "Early Adopter", "Joined the InterviewPrep platform and initiated career readiness", "🚀");
-        userBadgeRepository.save(starterBadge);
+            // Pre-award a starter badge
+            UserBadge starterBadge = new UserBadge(student, "WELCOME_PREPPER", "Early Adopter", "Joined the InterviewPrep platform and initiated career readiness", "🚀");
+            userBadgeRepository.save(starterBadge);
+        }
 
         // 2. Seed Subjects and Topics
         Map<String, Subject> subjectMap = new HashMap<>();

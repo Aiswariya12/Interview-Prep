@@ -38,14 +38,14 @@
 
 ---
 
-## 🔐 Demo Credentials (Pre-Seeded)
+## 🔐 Credentials & Access
 
-| Role | Email | Password |
-| :--- | :--- | :--- |
-| **Student Demo** | `student@interviewprep.com` | `Student@123` |
-| **Admin Demo** | `admin@interviewprep.com` | `Admin@123` |
+| Role | Email | Password | Access Method |
+| :--- | :--- | :--- | :--- |
+| **Student Demo** | `student@interviewprep.com` | `Student@123` | 1-Click Auto-fill on `/login` |
+| **Platform Administrator** | `pradhanaiswariya1@gmail.com` | `Aiswariya00` | Manual entry on `/login` |
 
-*(You can also use the **1-Click Demo Login** buttons directly on the `/login` page!)*
+*(Student demo can be auto-filled via the 1-click button on the `/login` page; Admin logs in securely via manual entry.)*
 
 ---
 
