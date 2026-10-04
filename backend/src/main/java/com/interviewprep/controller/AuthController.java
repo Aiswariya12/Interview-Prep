@@ -3,6 +3,7 @@ package com.interviewprep.controller;
 import com.interviewprep.dto.ApiResponse;
 import com.interviewprep.dto.AuthRequest;
 import com.interviewprep.dto.AuthResponse;
+import com.interviewprep.dto.ChangePasswordRequest;
 import com.interviewprep.dto.RegisterRequest;
 import com.interviewprep.dto.UserDto;
 import com.interviewprep.service.AuthService;
@@ -43,5 +44,12 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserDto>> getCurrentUser() {
         UserDto profile = authService.getCurrentUserProfile();
         return ResponseEntity.ok(ApiResponse.ok(profile));
+    }
+
+    @PostMapping("/change-password")
+    @Operation(summary = "Change password by verifying old password and replacing with new password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest req) {
+        authService.changePassword(req);
+        return ResponseEntity.ok(ApiResponse.ok("Password changed successfully", null));
     }
 }

@@ -2,6 +2,7 @@ package com.interviewprep.service;
 
 import com.interviewprep.dto.AuthRequest;
 import com.interviewprep.dto.AuthResponse;
+import com.interviewprep.dto.ChangePasswordRequest;
 import com.interviewprep.dto.RegisterRequest;
 import com.interviewprep.dto.UserDto;
 import com.interviewprep.entity.Role;
@@ -126,5 +127,48 @@ public class AuthService {
 
     public UserDto getCurrentUserProfile() {
         return UserDto.fromEntity(getCurrentAuthenticatedUser());
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest req) {
+        String emailToUse = null;
+
+        // 1. If user is currently authenticated via JWT, get their email
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            emailToUse = auth.getName();
+        }
+
+        // 2. If not authenticated or email explicitly provided in request
+        if ((emailToUse == null || emailToUse.isBlank()) && req.getEmail() != null && !req.getEmail().isBlank()) {
+            emailToUse = req.getEmail().trim().toLowerCase();
+        }
+
+        if (emailToUse == null || emailToUse.isBlank()) {
+            throw new BadRequestException("Email is required to change password.");
+        }
+
+        String normalizedEmail = emailToUse.trim().toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail)
+                .or(() -> userRepository.findByEmail(req.getEmail()))
+                .orElseThrow(() -> new BadRequestException("Email not registered. Please register first."));
+
+        // 3. Verify old password
+        if (req.getOldPassword() == null || !passwordEncoder.matches(req.getOldPassword(), user.getPassword())) {
+            throw new BadRequestException("Incorrect old password. Please enter correct old password.");
+        }
+
+        // 4. Validate new password
+        if (req.getNewPassword() == null || req.getNewPassword().trim().length() < 6) {
+            throw new BadRequestException("New password must be at least 6 characters long.");
+        }
+
+        if (passwordEncoder.matches(req.getNewPassword().trim(), user.getPassword())) {
+            throw new BadRequestException("New password cannot be the same as the old password.");
+        }
+
+        // 5. Replace old password with new password
+        user.setPassword(passwordEncoder.encode(req.getNewPassword().trim()));
+        userRepository.saveAndFlush(user);
     }
 }
