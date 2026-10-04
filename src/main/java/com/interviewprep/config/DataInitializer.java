@@ -24,6 +24,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final UserBadgeRepository userBadgeRepository;
     private final MockTestRepository mockTestRepository;
+    private final SubjectNoteRepository subjectNoteRepository;
 
     public DataInitializer(UserRepository userRepository,
                            SubjectRepository subjectRepository,
@@ -31,7 +32,8 @@ public class DataInitializer implements CommandLineRunner {
                            QuestionRepository questionRepository,
                            PasswordEncoder passwordEncoder,
                            UserBadgeRepository userBadgeRepository,
-                           MockTestRepository mockTestRepository) {
+                           MockTestRepository mockTestRepository,
+                           SubjectNoteRepository subjectNoteRepository) {
         this.userRepository = userRepository;
         this.subjectRepository = subjectRepository;
         this.topicRepository = topicRepository;
@@ -39,6 +41,7 @@ public class DataInitializer implements CommandLineRunner {
         this.passwordEncoder = passwordEncoder;
         this.userBadgeRepository = userBadgeRepository;
         this.mockTestRepository = mockTestRepository;
+        this.subjectNoteRepository = subjectNoteRepository;
     }
 
     @Override
@@ -108,8 +111,14 @@ public class DataInitializer implements CommandLineRunner {
             seedSampleInterviews(students, subjectMap, topicMap);
         }
 
-        logger.info("Database initialization completed. Total users: {}, subjects: {}, topics: {}, questions: {}, completed mock tests: {}.",
-                userRepository.count(), subjectRepository.count(), topicRepository.count(), questionRepository.count(), mockTestRepository.count());
+        // 6. Seed Sample Subject Note Links if not yet seeded
+        if (subjectNoteRepository.count() == 0) {
+            logger.info("Seeding starter subject note links...");
+            seedSubjectNotes(subjectMap);
+        }
+
+        logger.info("Database initialization completed. Total users: {}, subjects: {}, topics: {}, questions: {}, completed mock tests: {}, note links: {}.",
+                userRepository.count(), subjectRepository.count(), topicRepository.count(), questionRepository.count(), mockTestRepository.count(), subjectNoteRepository.count());
     }
 
     private User seedOrUpdateStudent(String name, String email, String rawPassword, String college, String degree, String branch, int gradYear, int streak) {
@@ -714,5 +723,48 @@ public class DataInitializer implements CommandLineRunner {
         ));
 
         questionRepository.saveAll(questions);
+    }
+
+    private void seedSubjectNotes(Map<String, Subject> subjectMap) {
+        if (subjectMap == null || subjectMap.isEmpty()) return;
+        List<SubjectNote> notes = new ArrayList<>();
+
+        Subject java = subjectMap.get("Java");
+        if (java != null) {
+            notes.add(new SubjectNote("Oracle Java Official Documentation & Tutorials", "https://docs.oracle.com/javase/tutorial/", "Core language specifications, OOP concepts, generics, and API reference.", java));
+            notes.add(new SubjectNote("Java Concurrency & Multithreading Revision Guide", "https://www.geeksforgeeks.org/multithreading-in-java/", "Thread lifecycle, executors, locks, and synchronized blocks cheat sheet.", java));
+            notes.add(new SubjectNote("Baeldung Java Streams & Lambdas Deep Dive", "https://www.baeldung.com/java-8-streams", "Functional interfaces, parallel streams, and collectors guide.", java));
+        }
+
+        Subject spring = subjectMap.get("Spring Boot");
+        if (spring != null) {
+            notes.add(new SubjectNote("Spring Boot Official Reference Documentation", "https://spring.io/projects/spring-boot", "Production-grade enterprise Spring architectures, actuators, and starters.", spring));
+            notes.add(new SubjectNote("Spring Security & JWT Authentication Guide", "https://spring.io/guides/tutorials/rest/", "Stateless API protection, filter chains, and token validation notes.", spring));
+        }
+
+        Subject react = subjectMap.get("React");
+        if (react != null) {
+            notes.add(new SubjectNote("React.dev Official Modern Documentation & Hooks", "https://react.dev/", "Deep-dive into useState, useEffect, useCallback, and React 19 paradigms.", react));
+            notes.add(new SubjectNote("React Reconciliation & Fiber Architecture Notes", "https://react.dev/reference/react", "Diffing algorithm, fiber reconciliation, and performance optimization.", react));
+        }
+
+        Subject mysql = subjectMap.get("MySQL & SQL");
+        if (mysql == null) mysql = subjectMap.get("MySQL");
+        if (mysql != null) {
+            notes.add(new SubjectNote("MySQL 8.0 Reference Manual & Query Optimization", "https://dev.mysql.com/doc/refman/8.0/en/", "Relational schema designs, clustered indexing, and ACID guarantees.", mysql));
+            notes.add(new SubjectNote("Use The Index, Luke: SQL Indexing Cheat Sheet", "https://use-the-index-luke.com/", "B-Tree indexes, query execution plans, and join performance tuning.", mysql));
+        }
+
+        Subject dsa = subjectMap.get("Data Structures & Algorithms");
+        if (dsa == null) dsa = subjectMap.get("DSA");
+        if (dsa != null) {
+            notes.add(new SubjectNote("VisuAlgo: Interactive DSA Algorithms Visualizer", "https://visualgo.net/", "Animated algorithmic walkthroughs for trees, graphs, sorting, and DP.", dsa));
+            notes.add(new SubjectNote("NeetCode Technical Interview Roadmap & Patterns", "https://neetcode.io/roadmap", "Curated patterns for binary search, two pointers, sliding window, and graphs.", dsa));
+        }
+
+        if (!notes.isEmpty()) {
+            subjectNoteRepository.saveAllAndFlush(notes);
+            logger.info("Seeded {} subject note links across subjects.", notes.size());
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.interviewprep.controller;
 
 import com.interviewprep.dto.ApiResponse;
 import com.interviewprep.entity.Subject;
+import com.interviewprep.entity.SubjectNote;
 import com.interviewprep.entity.Topic;
 import com.interviewprep.service.SubjectService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,5 +39,11 @@ public class SubjectController {
     @Operation(summary = "Get all topics under a specific subject")
     public ResponseEntity<ApiResponse<List<Topic>>> getTopicsBySubject(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(subjectService.getTopicsBySubjectId(id)));
+    }
+
+    @GetMapping("/{id}/notes")
+    @Operation(summary = "Get all note links under a specific subject")
+    public ResponseEntity<ApiResponse<List<SubjectNote>>> getNotesBySubject(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(subjectService.getNotesBySubjectId(id)));
     }
 }

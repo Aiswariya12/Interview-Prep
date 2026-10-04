@@ -1,9 +1,11 @@
 package com.interviewprep.service;
 
 import com.interviewprep.entity.Subject;
+import com.interviewprep.entity.SubjectNote;
 import com.interviewprep.entity.Topic;
 import com.interviewprep.exception.BadRequestException;
 import com.interviewprep.exception.ResourceNotFoundException;
+import com.interviewprep.repository.SubjectNoteRepository;
 import com.interviewprep.repository.SubjectRepository;
 import com.interviewprep.repository.TopicRepository;
 import org.springframework.stereotype.Service;
@@ -16,10 +18,14 @@ public class SubjectService {
 
     private final SubjectRepository subjectRepository;
     private final TopicRepository topicRepository;
+    private final SubjectNoteRepository subjectNoteRepository;
 
-    public SubjectService(SubjectRepository subjectRepository, TopicRepository topicRepository) {
+    public SubjectService(SubjectRepository subjectRepository,
+                          TopicRepository topicRepository,
+                          SubjectNoteRepository subjectNoteRepository) {
         this.subjectRepository = subjectRepository;
         this.topicRepository = topicRepository;
+        this.subjectNoteRepository = subjectNoteRepository;
     }
 
     public List<Subject> getAllActiveSubjects() {
@@ -78,5 +84,23 @@ public class SubjectService {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new ResourceNotFoundException("Topic not found: " + topicId));
         topicRepository.delete(topic);
+    }
+
+    public List<SubjectNote> getNotesBySubjectId(Long subjectId) {
+        return subjectNoteRepository.findBySubjectIdOrderByIdAsc(subjectId);
+    }
+
+    @Transactional
+    public SubjectNote createNote(Long subjectId, SubjectNote note) {
+        Subject subject = getSubjectById(subjectId);
+        note.setSubject(subject);
+        return subjectNoteRepository.saveAndFlush(note);
+    }
+
+    @Transactional
+    public void deleteNote(Long noteId) {
+        SubjectNote note = subjectNoteRepository.findById(noteId)
+                .orElseThrow(() -> new ResourceNotFoundException("Note link not found with id: " + noteId));
+        subjectNoteRepository.delete(note);
     }
 }

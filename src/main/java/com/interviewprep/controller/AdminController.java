@@ -3,6 +3,7 @@ package com.interviewprep.controller;
 import com.interviewprep.dto.*;
 import com.interviewprep.entity.Role;
 import com.interviewprep.entity.Subject;
+import com.interviewprep.entity.SubjectNote;
 import com.interviewprep.entity.Topic;
 import com.interviewprep.entity.Question;
 import com.interviewprep.repository.UserRepository;
@@ -125,6 +126,27 @@ public class AdminController {
     public ResponseEntity<ApiResponse<Void>> deleteTopic(@PathVariable Long topicId) {
         subjectService.deleteTopic(topicId);
         return ResponseEntity.ok(ApiResponse.ok("Topic deleted successfully", null));
+    }
+
+    @PostMapping("/subjects/{subjectId}/notes")
+    @Operation(summary = "Add note link under subject")
+    public ResponseEntity<ApiResponse<SubjectNote>> createNote(@PathVariable Long subjectId, @RequestBody SubjectNote note) {
+        SubjectNote created = subjectService.createNote(subjectId, note);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("Note link added successfully", created));
+    }
+
+    @DeleteMapping("/subjects/notes/{noteId}")
+    @Operation(summary = "Delete note link")
+    public ResponseEntity<ApiResponse<Void>> deleteNote(@PathVariable Long noteId) {
+        subjectService.deleteNote(noteId);
+        return ResponseEntity.ok(ApiResponse.ok("Note link deleted successfully", null));
+    }
+
+    @DeleteMapping("/notes/{noteId}")
+    @Operation(summary = "Delete note link (alias)")
+    public ResponseEntity<ApiResponse<Void>> deleteNoteAlias(@PathVariable Long noteId) {
+        subjectService.deleteNote(noteId);
+        return ResponseEntity.ok(ApiResponse.ok("Note link deleted successfully", null));
     }
 
     @PostMapping("/questions")
