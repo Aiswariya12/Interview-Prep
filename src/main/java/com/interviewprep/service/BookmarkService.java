@@ -37,10 +37,11 @@ public class BookmarkService {
         Optional<Bookmark> existing = bookmarkRepository.findByUserIdAndQuestionId(user.getId(), questionId);
         if (existing.isPresent()) {
             bookmarkRepository.delete(existing.get());
+            bookmarkRepository.flush();
             return null;
         } else {
             Bookmark b = new Bookmark(user, question, notes);
-            return bookmarkRepository.save(b);
+            return bookmarkRepository.saveAndFlush(b);
         }
     }
 

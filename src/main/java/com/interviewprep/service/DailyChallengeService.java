@@ -51,7 +51,7 @@ public class DailyChallengeService {
                 challenge.setQuestions(new java.util.LinkedHashSet<>(questions.stream().limit(5).toList()));
             }
 
-            return dailyChallengeRepository.save(challenge);
+            return dailyChallengeRepository.saveAndFlush(challenge);
         });
     }
 }

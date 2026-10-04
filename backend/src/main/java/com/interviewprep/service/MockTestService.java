@@ -80,16 +80,13 @@ public class MockTestService {
         }
         mockTest.setMaxScore(maxScore);
 
-        mockTest = mockTestRepository.save(mockTest);
-
-        List<MockQuestion> mockQuestions = new ArrayList<>();
         int order = 1;
         for (Question q : questions) {
             MockQuestion mq = new MockQuestion(mockTest, q, order++);
-            mockQuestions.add(mq);
+            mockTest.getMockQuestions().add(mq);
         }
-        mockQuestionRepository.saveAll(mockQuestions);
-        mockTest.setMockQuestions(mockQuestions);
+
+        mockTest = mockTestRepository.saveAndFlush(mockTest);
 
         return MockTestDetailDto.fromEntity(mockTest);
     }
@@ -124,7 +121,7 @@ public class MockTestService {
             mq.setIsMarkedForReview(req.getIsMarkedForReview());
         }
 
-        mockQuestionRepository.save(mq);
+        mockQuestionRepository.saveAndFlush(mq);
     }
 
     @Transactional
@@ -192,7 +189,7 @@ public class MockTestService {
             }
         }
 
-        mockQuestionRepository.saveAll(questions);
+        mockQuestionRepository.saveAllAndFlush(questions);
 
         totalScore = Math.round(totalScore * 100.0) / 100.0;
         double maxScore = test.getMaxScore() > 0 ? test.getMaxScore() : questions.size();
@@ -213,7 +210,7 @@ public class MockTestService {
         test.setStatus(MockTestStatus.COMPLETED);
         test.setCompletedAt(LocalDateTime.now());
 
-        mockTestRepository.save(test);
+        mockTestRepository.saveAndFlush(test);
 
         // Update streak & user stats
         updateUserStreakAndBadges(user, percentage, attempted);
@@ -266,7 +263,7 @@ public class MockTestService {
             }
         }
         user.setLastPracticeDate(LocalDateTime.now());
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
 
         // Badges check
         awardBadgeIfEligible(user, "FIRST_MOCK", "First Mock Completed", "Completed your first mock test on the platform", "🎯");
@@ -284,7 +281,7 @@ public class MockTestService {
     private void awardBadgeIfEligible(User user, String key, String name, String desc, String icon) {
         if (!userBadgeRepository.existsByUserIdAndBadgeKey(user.getId(), key)) {
             UserBadge badge = new UserBadge(user, key, name, desc, icon);
-            userBadgeRepository.save(badge);
+            userBadgeRepository.saveAndFlush(badge);
         }
     }
 }

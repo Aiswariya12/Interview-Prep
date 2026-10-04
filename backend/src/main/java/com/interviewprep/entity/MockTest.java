@@ -124,7 +124,12 @@ public class MockTest {
     public void setStatus(MockTestStatus status) { this.status = status; }
 
     public List<MockQuestion> getMockQuestions() { return mockQuestions; }
-    public void setMockQuestions(List<MockQuestion> mockQuestions) { this.mockQuestions = mockQuestions; }
+    public void setMockQuestions(List<MockQuestion> mockQuestions) {
+        this.mockQuestions.clear();
+        if (mockQuestions != null) {
+            this.mockQuestions.addAll(mockQuestions);
+        }
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
