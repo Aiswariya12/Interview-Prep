@@ -4,13 +4,12 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy Maven configuration and download dependencies first (Docker layer caching)
+# Copy Maven configuration and source code
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Copy source code and package production JAR
 COPY src ./src
-RUN mvn clean package -DskipTests
+
+# Package production JAR
+RUN mvn clean package -DskipTests --no-transfer-progress
 
 # =========================================================================
 # Stage 2: Lightweight Production Runtime Image
@@ -19,7 +18,7 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Copy compiled JAR from build stage
-COPY --from=build /app/target/interviewprep-api-1.0.0.jar app.jar
+COPY --from=build /app/target/*.jar app.jar
 
 # Expose port (Render & Railway automatically inject PORT environment variable)
 EXPOSE 8082

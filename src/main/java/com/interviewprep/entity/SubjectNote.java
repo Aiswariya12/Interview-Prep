@@ -1,6 +1,8 @@
 package com.interviewprep.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -24,7 +26,7 @@ public class SubjectNote {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id", nullable = false)
-    @JsonIgnoreProperties({"topics", "notes", "hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     private Subject subject;
 
     @Column(nullable = false, updatable = false)
@@ -54,6 +56,11 @@ public class SubjectNote {
 
     public Subject getSubject() { return subject; }
     public void setSubject(Subject subject) { this.subject = subject; }
+
+    @JsonProperty("subjectId")
+    public Long getSubjectId() {
+        return subject != null ? subject.getId() : null;
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

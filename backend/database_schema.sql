@@ -152,3 +152,14 @@ CREATE TABLE IF NOT EXISTS daily_challenge_questions (
     CONSTRAINT fk_dcq_challenge FOREIGN KEY (challenge_id) REFERENCES daily_challenges(id) ON DELETE CASCADE,
     CONSTRAINT fk_dcq_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
 );
+
+-- 10. Subject Notes Table (Curated reference & study notes per subject)
+CREATE TABLE IF NOT EXISTS subject_notes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    url VARCHAR(1000) NOT NULL,
+    description TEXT,
+    subject_id BIGINT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sn_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+);
