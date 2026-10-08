@@ -70,11 +70,30 @@ public class DataSourceConfig {
         ds.setDriverClassName(driverClassName);
         ds.setMaximumPoolSize(10);
         ds.setMinimumIdle(2);
-        ds.setConnectionTimeout(30000);
+        ds.setConnectionTimeout(6000);
         ds.setIdleTimeout(600000);
         ds.setMaxLifetime(1800000);
 
-        logger.info("Connected to DataSource with URL: {}", resolvedUrl != null ? resolvedUrl.replaceAll(":[^/@]+@", ":****@") : "null");
-        return ds;
+        try (java.sql.Connection conn = ds.getConnection()) {
+            logger.info("Connected to MySQL DataSource with URL: {}", resolvedUrl != null ? resolvedUrl.replaceAll(":[^/@]+@", ":****@") : "null");
+            return ds;
+        } catch (Exception e) {
+            logger.warn("Could not connect to MySQL at {}. Activating zero-config embedded database fallback. Error: {}",
+                    resolvedUrl != null ? resolvedUrl.replaceAll(":[^/@]+@", ":****@") : "null", e.getMessage());
+            try {
+                ds.close();
+            } catch (Exception ignored) {}
+
+            HikariDataSource fallback = new HikariDataSource();
+            fallback.setJdbcUrl("jdbc:h2:file:./data/interviewprep_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;AUTO_SERVER=TRUE");
+            fallback.setDriverClassName("org.h2.Driver");
+            fallback.setUsername("sa");
+            fallback.setPassword("");
+            fallback.setMaximumPoolSize(10);
+            fallback.setMinimumIdle(2);
+            fallback.setConnectionTimeout(30000);
+            logger.info("Fallback persistent H2 database activated successfully.");
+            return fallback;
+        }
     }
 }

@@ -5,6 +5,8 @@ frontend/dist/
 backend/target/
 tools/
 target/
+data/
+backend/data/
 
 # Environment Variables & Secrets (Never commit secrets to GitHub)
 .env
