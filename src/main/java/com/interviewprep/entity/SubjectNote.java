@@ -57,6 +57,7 @@ public class SubjectNote {
     public Subject getSubject() { return subject; }
     public void setSubject(Subject subject) { this.subject = subject; }
 
+    @Transient
     @JsonProperty("subjectId")
     public Long getSubjectId() {
         return subject != null ? subject.getId() : null;
